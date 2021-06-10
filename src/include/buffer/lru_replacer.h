@@ -13,6 +13,8 @@
 #pragma once
 
 #include <list>
+#include <map>
+#include <memory>
 #include <mutex>  // NOLINT
 #include <vector>
 
@@ -30,7 +32,7 @@ class LRUReplacer : public Replacer {
    * Create a new LRUReplacer.
    * @param num_pages the maximum number of pages the LRUReplacer will be required to store
    */
-  explicit LRUReplacer(size_t num_pages);
+  explicit LRUReplacer(const size_t num_pages);
 
   /**
    * Destroys the LRUReplacer.
@@ -47,6 +49,9 @@ class LRUReplacer : public Replacer {
 
  private:
   // TODO(student): implement me!
+  const size_t num_pages_;
+  std::map<frame_id_t, frame_id_t> pages_;
+  bool Empty();
 };
 
 }  // namespace bustub

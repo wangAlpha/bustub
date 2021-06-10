@@ -92,7 +92,7 @@ class BufferPoolManager {
   }
 
   /** @return pointer to all the pages in the buffer pool */
-  Page *GetPages() { return pages_; }
+  Page *GetPages() { return pages_.get(); }
 
   /** @return size of the buffer pool */
   size_t GetPoolSize() { return pool_size_; }
@@ -155,7 +155,7 @@ class BufferPoolManager {
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
   /** Array of buffer pool pages. */
-  Page *pages_;
+  std::unique_ptr<Page[]> pages_;
   /** Pointer to the disk manager. */
   DiskManager *disk_manager_ __attribute__((__unused__));
   /** Pointer to the log manager. */
@@ -163,7 +163,7 @@ class BufferPoolManager {
   /** Page table for keeping track of buffer pool pages. */
   std::unordered_map<page_id_t, frame_id_t> page_table_;
   /** Replacer to find unpinned pages for replacement. */
-  Replacer *replacer_;
+  std::unique_ptr<LRUReplacer> replacer_;
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
