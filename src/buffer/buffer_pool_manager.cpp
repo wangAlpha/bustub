@@ -36,40 +36,35 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   // If P exists, pin it and return it immediately.
 
   if (auto it = page_table_.find(page_id); it != page_table_.end()) {
-    auto &page =
-        *std::find_if(pages_->begin(), pages_->end(), [id = it->second](Page &p) { return p.GetPageId() == id; });
-    replacer_->Pin(it->second);
+    auto const frame_id = it->second;
+    auto &page = pages_->at(frame_id);
+    replacer_->Pin(frame_id);
     LOG_INFO("#FetchPage: %d", page_id);
     return &page;
   }
 
   Page *fetch_page = nullptr;
-  // If P does not exist, find a replacement page (R) from either the free list or the replacer.
-  auto free_frame_id = std::find(free_list_.begin(), free_list_.end(), page_id);
-  if (free_frame_id != free_list_.end()) {
-    free_list_.erase(free_frame_id);
 
-    auto &free_page =
-        *std::find_if(pages_->begin(), pages_->end(), [](Page &p) { return p.GetPageId() == INVALID_PAGE_ID; });
-    fetch_page = &free_page;
+  if (!free_list_.empty()) {
+    auto const frame_id = free_list_.front();
+    free_list_.pop_front();
+
+    fetch_page = &pages_->at(frame_id);
     fetch_page->page_id_ = page_id;
-    page_table_[page_id] = *free_frame_id;
+    page_table_[page_id] = frame_id;
 
     // Update P's metadata, read in the page content from disk, and then return a pointer to P.
     disk_manager_->ReadPage(fetch_page->GetPageId(), fetch_page->GetData());
     LOG_INFO("#FetchPage - Read: %d ", fetch_page->GetPageId());
   } else {
-    frame_id_t replace_frame_id;
-    if (!replacer_->Victim(&replace_frame_id)) {
+    frame_id_t frame_id;
+    if (!replacer_->Victim(&frame_id)) {
       return nullptr;
     }
     // Delete R from the page table and insert P.
-    page_table_[page_id] = replace_frame_id;
+    page_table_[page_id] = frame_id;
+    fetch_page = &pages_->at(frame_id);
 
-    auto &free_page =
-        *std::find_if(pages_->begin(), pages_->end(), [id = replace_frame_id](Page &p) { return p.GetPageId() == id; });
-
-    fetch_page = &free_page;
     fetch_page->page_id_ = page_id;
 
     // If R is dirty, write it back to the disk.
@@ -93,7 +88,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   }
 
   auto const frame_id = page_table_[page_id];
-  auto &page = *std::find_if(pages_->begin(), pages_->end(), [id = frame_id](Page &p) { return id == p.GetPageId(); });
+  auto &page = pages_->at(frame_id);
 
   page.pin_count_ = 0;
   page.is_dirty_ = is_dirty;
@@ -104,18 +99,19 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
 
 bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
   if (page_table_.find(page_id) == page_table_.end()) {
-    LOG_WARN("#FlushPage Page id:%d", page_id);
+    LOG_WARN("#FlushPage Page id:%d fail", page_id);
     return false;
   }
 
-  // FlushPageImpl should flush a page regardless of its pin status.
-  auto &page = *std::find_if(pages_->begin(), pages_->end(), [id = page_id](Page &p) { return id == p.GetPageId(); });
+  auto const frame_id = page_table_[page_id];
+  auto &page = pages_->at(frame_id);
   disk_manager_->WritePage(page_id, page.GetData());
   return true;
 }
 
 Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   if (free_list_.empty()) {
+    // TODO: all pinned
     auto const all_pinned = std::all_of(pages_->begin(), pages_->end(), [](Page &e) { return e.GetPinCount() > 0; });
     // If all the pages in the buffer pool are pinned, return nullptr.
     if (all_pinned) {
@@ -128,41 +124,31 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
     if (!replacer_->Victim(&replace_frame_id)) {
       return nullptr;
     }
-    auto &page =
-        *std::find_if(pages_->begin(), pages_->end(), [id = replace_frame_id](Page &p) { return id == p.GetPageId(); });
+
+    auto &page = pages_->at(replace_frame_id);
     page.ResetMemory();
     *page_id = page.GetPageId();
     LOG_INFO("#New Page Id: %d", *page_id);
     return &page;
-  } else {
-    auto const free_frame = free_list_.front();
-    free_list_.pop_front();
-
-    auto const page_id = disk_manager_->AllocatePage();
-    page_table_[page_id] = free_frame;
-    auto &page =
-        *std::find_if(pages_->begin(), pages_->end(), [id = free_frame](Page &p) { return id == p.GetPageId(); })
-    // TODO!: frame_id is pages_ index. Don't use find_if(pages)...
   }
 
   // Make a new page from DiskManager,
-  // Update P's metadata, zero out memory and add P to the page table.
-  // TODOO: Do need to call replacer->unpin()?
   *page_id = disk_manager_->AllocatePage();
-  page_table_[*page_id] = *page_id;
-  free_list_.remove(*page_id);
+  auto const frame_id = free_list_.front();
 
-  auto &free_page =
-      *std::find_if(pages_->begin(), pages_->end(), [](Page &p) { return p.GetPageId() == INVALID_PAGE_ID; });
-  free_page.page_id_ = *page_id;
-  free_page.ResetMemory();
+  free_list_.pop_front();
+  page_table_[*page_id] = frame_id;
 
+  // Update P's metadata, zero out memory and add P to the page table.
   // Set the page ID output parameter. Return a pointer to P.
-  return &free_page;
+  auto &page = pages_->at(frame_id);
+  page.page_id_ = *page_id;
+  page.ResetMemory();
+
+  return &page;
 }
 
 bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
-  // TODO: To implement this method.
   // 0.   Make sure you call DiskManager::DeallocatePage!
   // 1.   Search the page table for the requested page (P).
   // 1.   If P does not exist, return true.
@@ -172,16 +158,17 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
     return true;
   }
 
-  auto &page = *std::find_if(pages_->begin(), pages_->end(), [id = page_id](Page &p) { return p.GetPageId() == id; });
+  auto const frame_id = page_table_[page_id];
+  auto &page = pages_->at(frame_id);
   if (page.GetPinCount() != 0) {
     return false;
   }
-  auto const frame_id = page_table_[page_id];
   page_table_.erase(page_id);
-  free_list_.push_front(frame_id);
+  disk_manager_->DeallocatePage(page_id);
 
-  auto &p = *std::find_if(pages_->begin(), pages_->end(), [id = page_id](Page &p) { return id == p.GetPageId(); });
-  p.ResetMemory();
+  free_list_.push_front(frame_id);
+  page.page_id_ = INVALID_PAGE_ID;
+  page.ResetMemory();
   return true;
 }
 
