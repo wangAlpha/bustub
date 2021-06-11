@@ -8,9 +8,9 @@ file(GLOB BUSTUB_TEST_SOURCES "${PROJECT_SOURCE_DIR}/test/*/*test.cpp")
 find_program(VALGRIND_BIN valgrind)
 if ("${VALGRIND_BIN}" STREQUAL "VALGRIND_BIN-NOTFOUND")
     message(WARNING "BusTub/test couldn't find valgrind.")
-else()
+else ()
     message(STATUS "BusTub/test found valgrind at ${VALGRIND_BIN}")
-endif()
+endif ()
 
 set(VALGRIND_OPTIONS
         --error-exitcode=1                      # if leaks are detected, return nonzero value
@@ -49,15 +49,15 @@ foreach (bustub_test_source ${BUSTUB_TEST_SOURCES})
 
     # Set test target properties and dependencies.
     set_target_properties(${bustub_test_name}
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-        COMMAND ${bustub_test_name}
-    )
+            PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+            COMMAND ${bustub_test_name}
+            )
 
     # Add the test under CTest.
     add_test(${bustub_test_name} ${VALGRIND_BIN} ${VALGRIND_OPTIONS}
-    --suppressions=${VALGRIND_SUPPRESSIONS_FILE} ${CMAKE_BINARY_DIR}/test/${bustub_test_name}
-    --gtest_color=yes --gtest_output=xml:${CMAKE_BINARY_DIR}/test/unit_${test_name}.xml)
+            --suppressions=${VALGRIND_SUPPRESSIONS_FILE} ${CMAKE_BINARY_DIR}/test/${bustub_test_name}
+            --gtest_color=yes --gtest_output=xml:${CMAKE_BINARY_DIR}/test/unit_${test_name}.xml)
     add_test(${bustub_test_name} ${CMAKE_BINARY_DIR}/test/${bustub_test_name} --gtest_color=yes
             --gtest_output=xml:${CMAKE_BINARY_DIR}/test/${bustub_test_name}.xml)
-endforeach(bustub_test_source ${BUSTUB_TEST_SOURCES})
+endforeach (bustub_test_source ${BUSTUB_TEST_SOURCES})

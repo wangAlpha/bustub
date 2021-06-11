@@ -92,7 +92,7 @@ class BufferPoolManager {
   }
 
   /** @return pointer to all the pages in the buffer pool */
-  Page *GetPages() { return pages_.get(); }
+  Page *GetPages() const { return pages_.get()->data(); }
 
   /** @return size of the buffer pool */
   size_t GetPoolSize() { return pool_size_; }
@@ -155,7 +155,7 @@ class BufferPoolManager {
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
   /** Array of buffer pool pages. */
-  std::unique_ptr<Page[]> pages_;
+  std::unique_ptr<std::vector<Page>> pages_;
   /** Pointer to the disk manager. */
   DiskManager *disk_manager_ __attribute__((__unused__));
   /** Pointer to the log manager. */

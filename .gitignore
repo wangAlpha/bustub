@@ -260,3 +260,5 @@ docs/dev
 
 # Vagrant
 .vagrant
+wget-log
+musicbrainz-cmudb2020.db.gz

@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <list>
 #include <map>
 #include <memory>
@@ -48,7 +49,6 @@ class LRUReplacer : public Replacer {
   size_t Size() override;
 
  private:
-  // TODO(student): implement me!
   const size_t num_pages_;
   std::map<frame_id_t, frame_id_t> pages_;
   bool Empty();

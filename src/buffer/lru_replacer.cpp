@@ -18,17 +18,17 @@ LRUReplacer::LRUReplacer(const size_t num_pages) : num_pages_(num_pages) {}
 
 LRUReplacer::~LRUReplacer() = default;
 
-// Victim(T*) : Remove the object that was accessed the least recently compared to all the elements being tracked by
-// the Replacer, store its contents in the output parameter and return True. If the Replacer is empty return False.
+// Victim(T*) = Swap(*T): Remove the object that was accessed the least recently
+// compared to all the elements being tracked by the Replacer, store its contents
+// in the output parameter.
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
   if (pages_.empty()) {
     return false;
   }
-  LOG_INFO("Victim:");
-
-  for (const auto &kv : pages_) {
-    LOG_INFO("# %d -> %d", kv.first, kv.second);
-  }
+  // LOG_DEBUG("----------Victim:----------");
+  // for (const auto &kv : pages_) {
+  //   LOG_DEBUG("# %d -> %d", kv.first, kv.second);
+  // }
   const auto least_frame =
       std::min_element(pages_.begin(), pages_.end(), [](auto &a, auto &b) { return a.second > b.second; });
   *frame_id = least_frame->first;
@@ -36,7 +36,7 @@ bool LRUReplacer::Victim(frame_id_t *frame_id) {
   return true;
 }
 
-// Pin(T) : This method should be called after a page is pinned to a frame in the BufferPoolManager.
+// Pin/Reference(T) : This method should be called after a page is pinned to a frame in the BufferPoolManager.
 // It should remove the frame containing the pinned page from the LRUReplacer.
 void LRUReplacer::Pin(frame_id_t frame_id) {
   if (pages_.find(frame_id) != pages_.end()) {
@@ -61,8 +61,7 @@ void LRUReplacer::Unpin(frame_id_t frame_id) {
   }
 }
 
-// Size() : This method returns the number of frames that are currently in the LRUReplacer.
-// The implementation details are up to you.
+// Size() : This method returns the number of frames that are currently.
 size_t LRUReplacer::Size() { return pages_.size(); }
 
 bool LRUReplacer::Empty() { return pages_.empty(); }
