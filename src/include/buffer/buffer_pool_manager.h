@@ -152,6 +152,14 @@ class BufferPoolManager {
    */
   void FlushAllPagesImpl();
 
+  /**
+   * Reset a frame in the buffer pool.
+   */
+  void ResetPage(frame_id_t frame_id, page_id_t page_id);
+
+  bool SearchFreeFrame(frame_id_t *frame_id);
+
+  bool AllPinned();
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
   /** Array of buffer pool pages. */

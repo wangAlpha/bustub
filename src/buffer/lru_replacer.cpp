@@ -23,6 +23,10 @@ LRUReplacer::~LRUReplacer() = default;
 // in the output parameter.
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
   if (pages_.empty()) {
+    LOG_DEBUG("------Victim------");
+    for (auto const &[page, frame] : pages_) {
+      LOG_DEBUG("page: %d-> frame: %d", page, frame);
+    }
     return false;
   }
   // LOG_DEBUG("----------Victim:----------");

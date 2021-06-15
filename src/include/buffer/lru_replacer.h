@@ -17,6 +17,7 @@
 #include <map>
 #include <memory>
 #include <mutex>  // NOLINT
+#include <unordered_map>
 #include <vector>
 
 #include "buffer/replacer.h"
@@ -48,10 +49,11 @@ class LRUReplacer : public Replacer {
 
   size_t Size() override;
 
+  bool Empty();
+
  private:
   const size_t num_pages_;
-  std::map<frame_id_t, frame_id_t> pages_;
-  bool Empty();
+  std::unordered_map<frame_id_t, frame_id_t> pages_;
 };
 
 }  // namespace bustub
