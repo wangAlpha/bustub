@@ -50,7 +50,7 @@ The only file you need to modify for this task is the `LockManager` class (`conc
 
 The specific locking mechanism taken by the lock manager depends on the transaction isolation level. You should first take a look at the `transaction.h` and `lock_manager.h` to become familiar with the API and member variables we provide. We also recommend to review the isolation level concepts since the implementation of these functions shall be compatible with the isolation level of the transaction that is making the lock/unlock requests. You have the freedom of adding any necessary data structures in `lock_manager.h`. You should consult with Chapters 15.1-15.2 in the textbook and isolation level concepts covered in lectures to make sure your implementation satisfies the requirement.
 
-### ADVICE FROM THE TAS
+### ADVICE FROM THE TASK
 
 - While your Lock Manager needs to use deadlock detection, we recommend implementing your lock manager first without any deadlock handling and then adding the detection mechanism after you verify it correctly locks and unlocks when no deadlocks occur.
 - You will need some way to keep track of which transactions are waiting on a lock. Take a look at `LockRequestQueue` class in `lock_manager.h`.

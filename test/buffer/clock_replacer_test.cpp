@@ -19,7 +19,7 @@
 
 namespace bustub {
 
-TEST(ClockReplacerTest, DISABLED_SampleTest) {
+TEST(ClockReplacerTest, SampleTest) {
   ClockReplacer clock_replacer(7);
 
   // Scenario: unpin six elements, i.e. add them to the replacer.
@@ -57,6 +57,48 @@ TEST(ClockReplacerTest, DISABLED_SampleTest) {
   EXPECT_EQ(6, value);
   clock_replacer.Victim(&value);
   EXPECT_EQ(4, value);
+}
+
+TEST(ClockReplacerTest, SampleTest1) {
+  ClockReplacer clock_replacer(5);
+
+  // Scenario: unpin five elements, i.e. add them to the replacer.
+  clock_replacer.Unpin(5);
+  clock_replacer.Unpin(3);
+  clock_replacer.Unpin(4);
+  clock_replacer.Unpin(1);
+  clock_replacer.Unpin(2);
+  clock_replacer.Unpin(3);
+  clock_replacer.Unpin(2);
+
+  EXPECT_EQ(5, clock_replacer.Size());
+
+  // Scenario: get three victims from the clock.
+  int value;
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(5, value);
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(3, value);
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(4, value);
+
+  // Scenario: pin elements in the replacer.
+  // Note that 3 has already been victimized, so pinning 3 should have no effect.
+  clock_replacer.Pin(2);
+  clock_replacer.Pin(5);
+  EXPECT_EQ(1, clock_replacer.Size());
+
+  // Scenario: unpin 4. We expect that the reference bit of 4 will be set to 1.
+  clock_replacer.Unpin(4);
+
+  // Scenario: continue looking for victims. We expect these victims.
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(1, value);
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(6, value);
+  clock_replacer.Victim(&value);
+  EXPECT_EQ(4, value);
+  EXPECT_EQ(0, clock_replacer.Size());
 }
 
 }  // namespace bustub

@@ -18,13 +18,23 @@ INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE::~IndexIterator() = default;
 
 INDEX_TEMPLATE_ARGUMENTS
-bool INDEXITERATOR_TYPE::isEnd() { throw std::runtime_error("unimplemented"); }
+bool INDEXITERATOR_TYPE::isEnd() {
+  // TODO: `isEnd()`: Return whether this iterator is pointing at the last key/value pair.
+  throw std::runtime_error("unimplemented");
+  return false;
+}
 
 INDEX_TEMPLATE_ARGUMENTS
-const MappingType &INDEXITERATOR_TYPE::operator*() { throw std::runtime_error("unimplemented"); }
+const MappingType &INDEXITERATOR_TYPE::operator*() {
+  // TODO: `operator*()`: Return the key/value pair this iterator is currently pointing at.
+  throw std::runtime_error("unimplemented");
+}
 
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() { throw std::runtime_error("unimplemented"); }
+INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
+  // TODO: `operator++()`: Move to the next key/value pair.
+  throw std::runtime_error("unimplemented");
+}
 
 template class IndexIterator<GenericKey<4>, RID, GenericComparator<4>>;
 

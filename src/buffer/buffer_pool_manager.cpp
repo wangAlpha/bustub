@@ -80,6 +80,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   page.pin_count_--;
   if (page.GetPinCount() <= 0) {
     replacer_->Unpin(frame_id);
+    //    free_list_.push_back(frame_id);
     page_table_.erase(page_id);
   }
   page.is_dirty_ |= is_dirty;

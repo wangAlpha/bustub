@@ -22,51 +22,47 @@ LRUReplacer::~LRUReplacer() = default;
 // compared to all the elements being tracked by the Replacer, store its contents
 // in the output parameter.
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
-  if (pages_.empty()) {
-    LOG_DEBUG("------Victim------");
-    for (auto const &[page, frame] : pages_) {
-      LOG_DEBUG("page: %d-> frame: %d", page, frame);
-    }
+  if (page_table_.empty()) {
     return false;
   }
-  // LOG_DEBUG("----------Victim:----------");
-  // for (const auto &kv : pages_) {
-  //   LOG_DEBUG("# %d -> %d", kv.first, kv.second);
-  // }
-  const auto least_frame =
-      std::min_element(pages_.begin(), pages_.end(), [](auto &a, auto &b) { return a.second > b.second; });
-  *frame_id = least_frame->first;
-  pages_.erase(least_frame);
+
+  const auto least_frame = pages_.front();
+  pages_.pop_front();
+  *frame_id = least_frame;
+  page_table_.erase(least_frame);
   return true;
 }
 
 // Pin/Reference(T) : This method should be called after a page is pinned to a frame in the BufferPoolManager.
 // It should remove the frame containing the pinned page from the LRUReplacer.
 void LRUReplacer::Pin(frame_id_t frame_id) {
-  if (pages_.find(frame_id) != pages_.end()) {
-    pages_.erase(frame_id);
+  if (page_table_.find(frame_id) != page_table_.end()) {
+    auto it = page_table_[frame_id];
+    pages_.erase(it);
+    page_table_.erase(frame_id);
   }
 }
 
 // Unpin(T) : This method should be called when the pin_count of a page becomes 0.
 // This method should add the frame containing the unpinned page to the LRUReplacer.
 void LRUReplacer::Unpin(frame_id_t frame_id) {
-  if (pages_.find(frame_id) == pages_.end()) {
-    for (auto &[k, v] : pages_) {
-      v++;
+  if (page_table_.find(frame_id) == page_table_.end()) {
+    if (page_table_.size() >= num_pages_) {
+      auto least_frame = pages_.front();
+      pages_.pop_front();
+      page_table_.erase(least_frame);
     }
-    pages_[frame_id] = 0;
-    if (pages_.size() >= num_pages_) {
-      const auto least_frame =
-          std::max_element(pages_.begin(), pages_.end(), [](auto &a, auto &b) { return a.second > b.second; });
-      pages_.erase(least_frame);
-    }
-    pages_[frame_id] = 0;
+
+    const auto it = pages_.insert(pages_.end(), frame_id);
+    page_table_[frame_id] = it;
   }
+  // else {
+  //   const auto it = page_table_[frame_id];
+  //   pages_.splice(pages_.end(), pages_, it);
+  // }
 }
 
 // Size() : This method returns the number of frames that are currently.
 size_t LRUReplacer::Size() { return pages_.size(); }
 
-bool LRUReplacer::Empty() { return pages_.empty(); }
 }  // namespace bustub

@@ -32,9 +32,15 @@ class IndexIterator {
 
   IndexIterator &operator++();
 
-  bool operator==(const IndexIterator &itr) const { throw std::runtime_error("unimplemented"); }
+  bool operator==(const IndexIterator &itr) const {
+    // TODO:`operator==()`: Return whether two iterators are equal
+    throw std::runtime_error("unimplemented");
+  }
 
-  bool operator!=(const IndexIterator &itr) const { throw std::runtime_error("unimplemented"); }
+  bool operator!=(const IndexIterator &itr) const {
+    // TODO:`operator!=()`: Return whether two iterators are not equal.
+    throw std::runtime_error("unimplemented");
+  }
 
  private:
   // add your own private member variables here

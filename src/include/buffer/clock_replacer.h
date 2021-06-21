@@ -14,6 +14,7 @@
 
 #include <list>
 #include <mutex>  // NOLINT
+#include <unordered_set>
 #include <vector>
 
 #include "buffer/replacer.h"
@@ -46,7 +47,9 @@ class ClockReplacer : public Replacer {
   size_t Size() override;
 
  private:
-  // TODO(student): implement me!
+  const size_t num_pages_;
+  std::list<std::pair<frame_id_t, bool>> pages_;
+  std::unordered_set<frame_id_t> page_table_;
 };
 
 }  // namespace bustub
