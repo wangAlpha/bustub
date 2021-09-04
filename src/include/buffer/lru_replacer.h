@@ -51,8 +51,8 @@ class LRUReplacer : public Replacer {
 
  private:
   const size_t num_pages_;
-  std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> page_table_;
   std::list<frame_id_t> pages_;
+  std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> page_table_;
 };
 
 }  // namespace bustub

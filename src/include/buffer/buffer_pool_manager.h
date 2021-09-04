@@ -157,7 +157,7 @@ class BufferPoolManager {
    */
   void ResetPage(frame_id_t frame_id, page_id_t page_id);
 
-  bool SearchFreeFrame(frame_id_t *frame_id);
+  bool RetrieveFreeFrame(frame_id_t *frame_id);
 
   bool AllPinned();
   /** Number of pages in the buffer pool. */
@@ -175,6 +175,6 @@ class BufferPoolManager {
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::mutex latch_;
+  mutable std::mutex latch_;
 };
 }  // namespace bustub

@@ -38,6 +38,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
 BufferPoolManager::~BufferPoolManager() {}
 
 Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
+  // std::lock_guard<std::mutex> gurad(latch_);
   if (auto it = page_table_.find(page_id); it != page_table_.end()) {
     auto const &frame_id = it->second;
     auto &page = pages_->at(frame_id);
@@ -55,7 +56,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     return nullptr;
   }
   LOG_DEBUG("Free list size:%zu, Replacer size: %zu, page id:%d", free_list_.size(), replacer_->Size(), page_id);
-  SearchFreeFrame(&frame_id);
+  RetrieveFreeFrame(&frame_id);
   auto &page = pages_->at(frame_id);
   ResetPage(frame_id, page_id);
   disk_manager_->ReadPage(page.GetPageId(), page.GetData());
@@ -67,6 +68,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
 }
 
 bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
+  // std::lock_guard<std::mutex> gurad(latch_);
   if (auto it = page_table_.find(page_id); it == page_table_.end()) {
     //    LOG_WARN("#UnpinPage Fail! Page id:%d", page_id);
     //    for (auto &[k, v] : page_table_) {
@@ -108,7 +110,7 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
 
   *page_id = disk_manager_->AllocatePage();
   frame_id_t frame_id;
-  if (SearchFreeFrame(&frame_id)) {
+  if (RetrieveFreeFrame(&frame_id)) {
     auto &page = pages_->at(frame_id);
     ResetPage(frame_id, *page_id);
     page_table_[*page_id] = frame_id;
@@ -156,7 +158,7 @@ void BufferPoolManager::ResetPage(frame_id_t frame_id, page_id_t page_id) {
 
 bool BufferPoolManager::AllPinned() { return free_list_.empty() && (replacer_->Size() == 0); }
 
-bool BufferPoolManager::SearchFreeFrame(frame_id_t *frame_id) {
+bool BufferPoolManager::RetrieveFreeFrame(frame_id_t *frame_id) {
   if (!free_list_.empty()) {
     *frame_id = free_list_.front();
     free_list_.pop_front();

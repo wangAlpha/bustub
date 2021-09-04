@@ -56,10 +56,6 @@ void LRUReplacer::Unpin(frame_id_t frame_id) {
     const auto it = pages_.insert(pages_.end(), frame_id);
     page_table_[frame_id] = it;
   }
-  // else {
-  //   const auto it = page_table_[frame_id];
-  //   pages_.splice(pages_.end(), pages_, it);
-  // }
 }
 
 // Size() : This method returns the number of frames that are currently.

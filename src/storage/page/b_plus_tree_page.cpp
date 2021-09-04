@@ -16,11 +16,11 @@ namespace bustub {
 // TODO:这是内部页面和叶页面都继承的父类，它只包含两个子类共享的信息。父页面分为几个字段，如下表所示。
 // Variable Name	Size	Description
 // page_type_		4	Page Type (internal or leaf)
-// lsn_			4	Log sequence number (Used in Project 4)
-// size_		4	Number of Key & Value pairs in page
+// lsn_				4	Log sequence number (Used in Project 4)
+// size_			4	Number of Key & Value pairs in page
 // max_size_		4	Max number of Key & Value pairs in page
 // parent_page_id_	4	Parent Page Id
-// page_id_		4	Self Page Id
+// page_id_			4	Self Page Id
 
 /*
  * Helper methods to get/set page type

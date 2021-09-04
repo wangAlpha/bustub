@@ -9,11 +9,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "storage/page/b_plus_tree_leaf_page.h"
+#include <iterator>
 #include <sstream>
-
 #include "common/exception.h"
 #include "common/rid.h"
-#include "storage/page/b_plus_tree_leaf_page.h"
 
 namespace bustub {
 
@@ -27,23 +27,40 @@ namespace bustub {
  * next page id and set max size
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {
+  SetPageId(page_id);
+  SetParentPageId(parent_id);
+  SetMaxSize(max_size);
+}
 
 /**
  * Helper methods to set/get next page id
  */
 INDEX_TEMPLATE_ARGUMENTS
-page_id_t B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const { return INVALID_PAGE_ID; }
+page_id_t B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const { return next_page_id_; }
 
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) { next_page_id_ = next_page_id; }
 
 /**
  * Helper method to find the first index i so that array[i].first >= key
  * NOTE: This method is only used when generating index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(const KeyType &key, const KeyComparator &comparator) const { return 0; }
+int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(const KeyType &key, const KeyComparator &comparator) const {
+  int first = 1;
+  int last = GetSize();
+  while (first < last) {
+    const int mi = (first + last) / 2;
+    if (comparator(key, KeyAt(mi)) < 0) {
+      last = mi;
+    } else {
+      first = mi + 1;
+    }
+  }
+
+  return first - 1;
+}
 
 /*
  * Helper method to find and return the key associated with input "index"(a.k.a
@@ -51,9 +68,8 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(const KeyType &key, const KeyComparator
  */
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const {
-  // replace with your own code
-  KeyType key{};
-  return key;
+  assert(0 <= index && index < GetMaxSize());
+  return array_[index].first;
 }
 
 /*
@@ -62,8 +78,8 @@ KeyType B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const {
  */
 INDEX_TEMPLATE_ARGUMENTS
 const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
-  // TODO:replace with your own code
-  return array[0];
+  assert(0 <= index && index < GetMaxSize());
+  return array_[index];
 }
 
 /*****************************************************************************
@@ -75,8 +91,16 @@ const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) {
-  // TODO: insert a key/value.
-  return 0;
+  const int index = KeyIndex(key, comparator);
+  assert(index > 0);
+  for (int i = GetSize(); i > index; --i) {
+    array_[i].first = array_[i - 1].first;
+    array_[i].second = array_[i - 1].second;
+  }
+  array_[index].first = key;
+  array_[index].second = value;
+  IncreaseSize(1);
+  return GetSize();
 }
 
 /*****************************************************************************
@@ -87,7 +111,11 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &valu
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {
-  // TODO:
+  assert(GetSize() > 0);
+  assert(recipient != nullptr);
+  const int size = GetSize();
+  const int half = GetMinSize() / 2;
+  recipient->CopyNFrom(array_ + half, size - half);
 }
 
 /*
@@ -95,7 +123,11 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyNFrom(MappingType *items, int size) {
-  // TODO:
+  assert(items != nullptr && size > 0);
+  for (int i = GetSize() - 1, j = 0; j < size; ++i, ++j) {
+    array_[i].first = items[j].first;
+    array_[i].second = items[j].second;
+  }
 }
 
 /*****************************************************************************
@@ -108,6 +140,11 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyNFrom(MappingType *items, int size) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const {
+  const int index = KeyIndex(key, comparator);
+  if (index < GetSize() && !comparator(key, KeyAt(index))) {
+    *value = array_[index].second;
+    return true;
+  }
   return false;
 }
 
@@ -121,7 +158,17 @@ bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, co
  * @return   page size after deletion
  */
 INDEX_TEMPLATE_ARGUMENTS
-int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const KeyComparator &comparator) { return 0; }
+int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const KeyComparator &comparator) {
+  const int index = KeyIndex(key, comparator);
+  if (index < GetSize() && !comparator(key, array_[index].first)) {
+    for (int i = index; i < GetSize() + 1; ++i) {
+      array_[i].first = array_[i + 1].first;
+      array_[i].second = array_[i + 1].second;
+    }
+    IncreaseSize(-1);
+  }
+  return GetSize();
+}
 
 /*****************************************************************************
  * MERGE
@@ -131,7 +178,11 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const 
  * to update the next_page id in the sibling page
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {
+  recipient->CopyNFrom(array_, GetSize());
+  recipient->SetNextPageId(GetNextPageId());
+  SetSize(0);
+}
 
 /*****************************************************************************
  * REDISTRIBUTE
@@ -140,25 +191,49 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {}
  * Remove the first key & value pair from this page to "recipient" page.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient) {
+  assert(GetSize() > 0);
+  recipient->CopyLastFrom(array_[0]);
+  for (int i = 0; i < GetSize() - 1; ++i) {
+    array_[i].first = array_[i + 1].first;
+    array_[i].second = array_[i + 1].second;
+  }
+  IncreaseSize(-1);
+}
 
 /*
  * Copy the item into the end of my item list. (Append item to my array)
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {
+  array_[GetSize()].first = item.first;
+  array_[GetSize()].second = item.second;
+  IncreaseSize(1);
+}
 
 /*
  * Remove the last key & value pair from this page to "recipient" page.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeLeafPage *recipient) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeLeafPage *recipient) {
+  assert(GetSize() > 0);
+  recipient->CopyFirstFrom(array_[GetSize() - 1]);
+  IncreaseSize(-1);
+}
 
 /*
  * Insert item at the front of my items. Move items accordingly.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyFirstFrom(const MappingType &item) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyFirstFrom(const MappingType &item) {
+  for (int i = GetSize(); i > 0; --i) {
+    array_[i].first = array_[i - 1].first;
+    array_[i].second = array_[i - 1].second;
+  }
+  array_[0].first = item.first;
+  array_[0].second = item.second;
+  IncreaseSize(1);
+}
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;
