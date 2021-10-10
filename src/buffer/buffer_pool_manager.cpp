@@ -42,9 +42,11 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   if (auto it = page_table_.find(page_id); it != page_table_.end()) {
     auto const &frame_id = it->second;
     auto &page = pages_->at(frame_id);
-    if (page.GetPinCount() == 0) {
-      page.pin_count_ = 1;
-    }
+    // TODO: To check me
+    //if (page.GetPinCount() == 0) {
+    //  page.pin_count_ = 1;
+    //}
+    page.pin_count_++;
     replacer_->Pin(frame_id);
     LOG_DEBUG("Fetch Page id:%d, frame id:%d", page_id, frame_id);
     return &page;

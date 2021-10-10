@@ -43,7 +43,15 @@ bool BPLUSTREE_TYPE::IsEmpty() const { return root_page_id_ == INVALID_PAGE_ID; 
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
   // TODO: Search value by key.
-  return false;
+  //
+  if (IsEmpty()) {
+    return false;
+  }
+  auto leaf_node = FindLeafPage(key, true);
+  auto leaf_page = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leaf_node->GetData());
+  const bool exist = leaf_page->Lookup(key, &result[0], comparator_);
+  buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+  return exist;
 }
 
 /*****************************************************************************
@@ -59,8 +67,12 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
   // TODO: Insert a unique node or return false;
+  // TODO: To solve concurrency issue.
   // if current tree is empty, start new tree, update root page id and insert entry
-  return false;
+  if (IsEmpty()) {
+    return false;
+  }
+  return InsertIntoLeaf(key, value, transaction);
 }
 /*
  * Insert constant key & value pair into an empty tree
@@ -70,7 +82,15 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
  */
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::StartNewTree(const KeyType &key, const ValueType &value) {
-  // TODO: Build a new tree by insert a root key.
+  Page *new_page = buffer_pool_manager_->NewPage(&root_page_id_);
+  if (new_page == nullptr) {
+    throw Exception("Failed to allicated a new page");
+  }
+  auto root_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(new_page->GetData());
+  root_node->Init(root_page_id_, INVALID_PAGE_ID);
+  root_node->Insert(key, value, comparator_);
+  UpdateRootPageId(true);
+  buffer_pool_manager_->UnpinPage(new_page->GetPageId(), true);
 }
 
 /*
@@ -83,8 +103,13 @@ void BPLUSTREE_TYPE::StartNewTree(const KeyType &key, const ValueType &value) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, Transaction *transaction) {
-  // TODO: Insert constant key & key pair into leaf page
-  return false;
+  auto leaf_page = FindLeafPage(key, false);
+  auto leaf_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leaf_page->GetData());
+  const int old_size = leaf_node->GetSize();
+  const int size = leaf_node->Insert(key, value, comparator_);
+  const bool inserted = old_size < size;
+  buffer_pool_manager_->UnpinPage(leaf_node->GetPageId(), inserted);
+  return inserted;
 }
 
 /*
@@ -98,9 +123,9 @@ INDEX_TEMPLATE_ARGUMENTS
 template <typename N>
 N *BPLUSTREE_TYPE::Split(N *node) {
   // TODO:
-  return nullptr;
+  // if node is root_node
+  // else node is not normal node
 }
-
 /*
  * Insert key & value pair into internal page after split
  * @param   old_node      input page from split() method
@@ -114,6 +139,7 @@ INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &key, BPlusTreePage *new_node,
                                       Transaction *transaction) {
   // TODO:insert a parent node.
+  // old_node->GetPageId();
 }
 
 /*****************************************************************************
@@ -129,6 +155,22 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &ke
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   // TODO: remove a key/value by a key.
+  if (IsEmpty()) {
+    return;
+  }
+  // if node is root
+  auto leaf_page = FindLeafPage(key, false);
+  B_PLUS_TREE_LEAF_PAGE_TYPE *leaf_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leaf_page->GetData());
+  ValueType value;
+  const bool exist = leaf_node->Lookup(key, &value, comparator_);
+  if (!exist) {
+    return;
+  }
+  if (leaf_node->IsRootPage()) {
+    // popluate a new root node
+  } else {
+    // coll
+  }
 }
 
 /*
@@ -188,7 +230,8 @@ void BPLUSTREE_TYPE::Redistribute(N *neighbor_node, N *node, int index) {}
  * happend
  */
 INDEX_TEMPLATE_ARGUMENTS
-bool BPLUSTREE_TYPE::AdjustRoot(BPlusTreePage *old_root_node) { return false; }
+bool BPLUSTREE_TYPE::AdjustRoot(BPlusTreePage *old_root_node) {
+   return false; }
 
 /*****************************************************************************
  * INDEX ITERATOR
@@ -199,7 +242,15 @@ bool BPLUSTREE_TYPE::AdjustRoot(BPlusTreePage *old_root_node) { return false; }
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() {
+  if (IsEmpty()) {
+    return INDEXITERATOR_TYPE(0, nullptr, buffer_pool_manager_);
+  }
+  KeyType key;
+  auto leafmost_leaf = FindLeafPage(key, true);
+  auto leaf_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leafmost_leaf->GetData());
+  return INDEXITERATOR_TYPE(0, leaf_node->KeyIndex(key, comparator_), buffer_pool_manager_);
+}
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key
@@ -207,7 +258,14 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() { return INDEXITERATOR_TYPE(); }
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) {
+  if (IsEmpty()) {
+    return INDEXITERATOR_TYPE(0, nullptr, buffer_pool_manager_);
+  }
+  auto leaf_page = FindLeafPage(key, false);
+  auto leaf_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leaf_page->GetData());
+  return INDEXITERATOR_TYPE(leaf_node->KeyIndex(key), leaf_page, buffer_pool_manager_);
+}
 
 /*
  * Input parameter is void, construct an index iterator representing the end
@@ -215,7 +273,13 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) { return INDEXITERA
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::end() { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::end() {
+  if (IsEmpty()) {
+    return INDEXITERATOR_TYPE(0, nullptr, buffer_pool_manager_);
+  }
+  // FIXME:
+  return INDEXITERATOR_TYPE();
+}
 
 /*****************************************************************************
  * UTILITIES AND DEBUG
@@ -226,8 +290,18 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::end() { return INDEXITERATOR_TYPE(); }
  */
 INDEX_TEMPLATE_ARGUMENTS
 Page *BPLUSTREE_TYPE::FindLeafPage(const KeyType &key, bool leftMost) {
-  //  TODO:
-  throw Exception(ExceptionType::NOT_IMPLEMENTED, "Implement this for test");
+  // Find leaf page by next page_id in internel page node
+  auto root_page = buffer_pool_manager_->FetchPage(root_page_id_);
+  auto btree_root = reinterpret_cast<BPlusTreePage *>(root_page->GetData());
+
+  while (!btree_root->IsLeafPage()) {
+    auto internal_page = reinterpret_cast<BPlusTreeInternalPage *>(root_page->GetData());
+    const page_id_t next_page_id = leftMost ? internal_page->KeyAt(0) : internal_page->Lookup(key, comparator_);
+    root_page = buffer_pool_manager_->FetchPage(next_page_id);
+    btree_root = reinterpret_cast<BPlusTree *>(root_page->GetData());
+    buffer_pool_manager_->UnpinPage(next_page_id, false);
+  }
+  return root_page;
 }
 
 /*
@@ -240,12 +314,10 @@ Page *BPLUSTREE_TYPE::FindLeafPage(const KeyType &key, bool leftMost) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::UpdateRootPageId(int insert_record) {
-  HeaderPage *header_page = static_cast<HeaderPage *>(buffer_pool_manager_->FetchPage(HEADER_PAGE_ID));
+  HeaderPage *header_page = reinterpret_cast<HeaderPage *>(buffer_pool_manager_->FetchPage(HEADER_PAGE_ID));
   if (insert_record != 0) {
-    // create a new record<index_name + root_page_id> in header_page
     header_page->InsertRecord(index_name_, root_page_id_);
   } else {
-    // update root_page_id in header_page
     header_page->UpdateRecord(index_name_, root_page_id_);
   }
   buffer_pool_manager_->UnpinPage(HEADER_PAGE_ID, true);
