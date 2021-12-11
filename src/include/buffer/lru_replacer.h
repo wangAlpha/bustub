@@ -50,6 +50,7 @@ class LRUReplacer : public Replacer {
   size_t Size() override;
 
  private:
+  std::mutex latch_;
   const size_t num_pages_;
   std::list<frame_id_t> pages_;
   std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> page_table_;

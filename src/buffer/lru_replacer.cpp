@@ -25,9 +25,9 @@ bool LRUReplacer::Victim(frame_id_t *frame_id) {
   if (page_table_.empty()) {
     return false;
   }
-
-  const auto least_frame = pages_.front();
-  pages_.pop_front();
+  // Remove the least used frame.
+  const frame_id_t least_frame = pages_.back();
+  pages_.pop_back();
   *frame_id = least_frame;
   page_table_.erase(least_frame);
   return true;
@@ -48,14 +48,13 @@ void LRUReplacer::Pin(frame_id_t frame_id) {
 void LRUReplacer::Unpin(frame_id_t frame_id) {
   if (page_table_.find(frame_id) == page_table_.end()) {
     if (page_table_.size() >= num_pages_) {
-      auto least_frame = pages_.front();
-      pages_.pop_front();
-      page_table_.erase(least_frame);
+      frame_id_t frame_id;
+      Victim(&frame_id);
     }
-
-    const auto it = pages_.insert(pages_.end(), frame_id);
-    page_table_[frame_id] = it;
+  } else {
+    pages_.erase(page_table_[frame_id]);
   }
+  page_table_[frame_id] = pages_.insert(pages_.begin(), frame_id);
 }
 
 // Size() : This method returns the number of frames that are currently.

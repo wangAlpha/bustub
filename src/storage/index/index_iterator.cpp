@@ -3,6 +3,7 @@
  */
 #include <cassert>
 
+#include "common/config.h"
 #include "storage/index/index_iterator.h"
 
 namespace bustub {
@@ -11,29 +12,37 @@ namespace bustub {
  * NOTE: you can change the destructor/constructor method here
  * set your own input parameters
  */
-INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE::IndexIterator() = default;
+// INDEX_TEMPLATE_ARGUMENTS
+// INDEXITERATOR_TYPE::IndexIterator() = default;
 
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE::~IndexIterator() = default;
-
-INDEX_TEMPLATE_ARGUMENTS
-bool INDEXITERATOR_TYPE::isEnd() {
-  // TODO: `isEnd()`: Return whether this iterator is pointing at the last key/value pair.
-  throw std::runtime_error("unimplemented");
-  return false;
+INDEXITERATOR_TYPE::~IndexIterator() {
+  if (current_leaf_node_ != nullptr) {
+    buffer_pool_manager_->UnpinPage(current_leaf_node_->GetPageId(), false);
+  }
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-const MappingType &INDEXITERATOR_TYPE::operator*() {
-  // TODO: `operator*()`: Return the key/value pair this iterator is currently pointing at.
-  throw std::runtime_error("unimplemented");
-}
+bool INDEXITERATOR_TYPE::isEnd() { return current_leaf_node_ == nullptr || index_ >= current_leaf_node_->GetMaxSize(); }
+
+INDEX_TEMPLATE_ARGUMENTS
+const MappingType &INDEXITERATOR_TYPE::operator*() { return current_leaf_node_->GetItem(index_); }
 
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
-  // TODO: `operator++()`: Move to the next key/value pair.
-  throw std::runtime_error("unimplemented");
+  index_ += 1;
+  if (index_ >= current_leaf_node_->GetMaxSize()) {
+    const page_id_t next = current_leaf_node_->GetNextPageId();
+    if (next == INVALID_PAGE_ID) {
+      current_leaf_node_ = nullptr;
+    } else {
+      Page *page = buffer_pool_manager_->FetchPage(next);
+      current_leaf_node_ = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(page->GetData());
+      buffer_pool_manager_->UnpinPage(next, false);
+      index_ = 0;
+    }
+  }
+  return *this;
 }
 
 template class IndexIterator<GenericKey<4>, RID, GenericComparator<4>>;

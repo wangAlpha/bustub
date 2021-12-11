@@ -18,6 +18,8 @@
 .sw?
 # vscode settings directory
 .vscode
+.cache
+.ccls-cache
 #OS X specific files.
 .DS_store
 # Core files
@@ -62,12 +64,13 @@ m4/ltoptions.m4
 m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
-
+./.cache/*
 #==============================================================================#
 # Build artifacts
 #==============================================================================#
 #m4/
 build/
+test/CMakeFiles/*
 #*.m4
 *.o
 *.lo
@@ -262,3 +265,5 @@ docs/dev
 .vagrant
 wget-log
 musicbrainz-cmudb2020.db.gz
+
+

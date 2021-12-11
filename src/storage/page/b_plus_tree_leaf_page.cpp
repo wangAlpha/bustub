@@ -28,6 +28,8 @@ namespace bustub {
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {
+  SetPageType(IndexPageType::LEAF_PAGE);
+  SetSize(0);
   SetPageId(page_id);
   SetParentPageId(parent_id);
   SetMaxSize(max_size);
@@ -92,7 +94,7 @@ const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) {
   const int index = KeyIndex(key, comparator);
-  assert(index > 0);
+  assert(index >= 0);
   for (int i = GetSize(); i > index; --i) {
     array_[i].first = array_[i - 1].first;
     array_[i].second = array_[i - 1].second;
@@ -140,6 +142,7 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyNFrom(MappingType *items, int size) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const {
+  // LOG_DEBUG("Lookup leaf page key: %d", key);
   const int index = KeyIndex(key, comparator);
   if (index < GetSize() && !comparator(key, KeyAt(index))) {
     *value = array_[index].second;
@@ -178,7 +181,8 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const 
  * to update the next_page id in the sibling page
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient, const KeyType &midddle_key,
+                                           BufferPoolManager *buffer_manager) {
   recipient->CopyNFrom(array_, GetSize());
   recipient->SetNextPageId(GetNextPageId());
   SetSize(0);
@@ -191,7 +195,8 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {
  * Remove the first key & value pair from this page to "recipient" page.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient) {
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient, const KeyType &midddle_key,
+                                                  BufferPoolManager *buffer_manager) {
   assert(GetSize() > 0);
   recipient->CopyLastFrom(array_[0]);
   for (int i = 0; i < GetSize() - 1; ++i) {
@@ -215,7 +220,8 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {
  * Remove the last key & value pair from this page to "recipient" page.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeLeafPage *recipient) {
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeLeafPage *recipient, const KeyType &midddle_key,
+                                                   BufferPoolManager *buffer_manager) {
   assert(GetSize() > 0);
   recipient->CopyFirstFrom(array_[GetSize() - 1]);
   IncreaseSize(-1);

@@ -62,7 +62,8 @@ static constexpr int LOG_LEVEL_DEBUG = 200;
 static constexpr int LOG_LEVEL_TRACE = 100;
 static constexpr int LOG_LEVEL_ALL = 0;
 
-#define LOG_LOG_TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+// #define LOG_LOG_TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+#define LOG_LOG_TIME_FORMAT "%H:%M:%S"
 #define LOG_OUTPUT_STREAM stdout
 
 // Compile Option
@@ -98,10 +99,10 @@ void OutputLogHeader(const char *file, int line, const char *func, int level);
 #if LOG_LEVEL <= LOG_LEVEL_ERROR
 #define LOG_ERROR_ENABLED
 // #pragma message("LOG_ERROR was enabled.")
-#define LOG_ERROR(...)                                                      \
-  OutputLogHeader(__SHORT_FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_ERROR); \
-  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                                \
-  fprintf(LOG_OUTPUT_STREAM, "\n");                                         \
+#define LOG_ERROR(...)                                                \
+  OutputLogHeader(__FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_ERROR); \
+  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                          \
+  fprintf(LOG_OUTPUT_STREAM, "\n");                                   \
   ::fflush(stdout)
 #else
 #define LOG_ERROR(...) ((void)0)
@@ -113,10 +114,10 @@ void OutputLogHeader(const char *file, int line, const char *func, int level);
 #if LOG_LEVEL <= LOG_LEVEL_WARN
 #define LOG_WARN_ENABLED
 // #pragma message("LOG_WARN was enabled.")
-#define LOG_WARN(...)                                                      \
-  OutputLogHeader(__SHORT_FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_WARN); \
-  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                               \
-  fprintf(LOG_OUTPUT_STREAM, "\n");                                        \
+#define LOG_WARN(...)                                                \
+  OutputLogHeader(__FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_WARN); \
+  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                         \
+  fprintf(LOG_OUTPUT_STREAM, "\n");                                  \
   ::fflush(stdout)
 #else
 #define LOG_WARN(...) ((void)0)
@@ -128,10 +129,10 @@ void OutputLogHeader(const char *file, int line, const char *func, int level);
 #if LOG_LEVEL <= LOG_LEVEL_INFO
 #define LOG_INFO_ENABLED
 // #pragma message("LOG_INFO was enabled.")
-#define LOG_INFO(...)                                                      \
-  OutputLogHeader(__SHORT_FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_INFO); \
-  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                               \
-  fprintf(LOG_OUTPUT_STREAM, "\n");                                        \
+#define LOG_INFO(...)                                                \
+  OutputLogHeader(__FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_INFO); \
+  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                         \
+  fprintf(LOG_OUTPUT_STREAM, "\n");                                  \
   ::fflush(stdout)
 #else
 #define LOG_INFO(...) ((void)0)
@@ -143,10 +144,10 @@ void OutputLogHeader(const char *file, int line, const char *func, int level);
 #if LOG_LEVEL <= LOG_LEVEL_DEBUG
 #define LOG_DEBUG_ENABLED
 // #pragma message("LOG_DEBUG was enabled.")
-#define LOG_DEBUG(...)                                                      \
-  OutputLogHeader(__SHORT_FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_DEBUG); \
-  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                                \
-  fprintf(LOG_OUTPUT_STREAM, "\n");                                         \
+#define LOG_DEBUG(...)                                                \
+  OutputLogHeader(__FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_DEBUG); \
+  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                          \
+  fprintf(LOG_OUTPUT_STREAM, "\n");                                   \
   ::fflush(stdout)
 #else
 #define LOG_DEBUG(...) ((void)0)
@@ -158,10 +159,10 @@ void OutputLogHeader(const char *file, int line, const char *func, int level);
 #if LOG_LEVEL <= LOG_LEVEL_TRACE
 #define LOG_TRACE_ENABLED
 // #pragma message("LOG_TRACE was enabled.")
-#define LOG_TRACE(...)                                                      \
-  OutputLogHeader(__SHORT_FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_TRACE); \
-  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                                \
-  fprintf(LOG_OUTPUT_STREAM, "\n");                                         \
+#define LOG_TRACE(...)                                                \
+  OutputLogHeader(__FILE__, __LINE__, __FUNCTION__, LOG_LEVEL_TRACE); \
+  ::fprintf(LOG_OUTPUT_STREAM, __VA_ARGS__);                          \
+  fprintf(LOG_OUTPUT_STREAM, "\n");                                   \
   ::fflush(stdout)
 #else
 #define LOG_TRACE(...) ((void)0)

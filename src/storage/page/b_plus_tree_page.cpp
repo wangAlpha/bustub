@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "storage/page/b_plus_tree_page.h"
-
+#include "common/logger.h"
 namespace bustub {
 
 // TODO:这是内部页面和叶页面都继承的父类，它只包含两个子类共享的信息。父页面分为几个字段，如下表所示。
@@ -36,7 +36,7 @@ void BPlusTreePage::SetPageType(IndexPageType page_type) { page_type_ = page_typ
  */
 int BPlusTreePage::GetSize() const { return size_; }
 void BPlusTreePage::SetSize(int size) { size_ = size; }
-void BPlusTreePage::IncreaseSize(int amount) { size_ -= amount; }
+void BPlusTreePage::IncreaseSize(int amount) { size_ += amount; }
 
 /*
  * Helper methods to get/set max size (capacity) of the page
@@ -48,7 +48,13 @@ void BPlusTreePage::SetMaxSize(int size) { max_size_ = size; }
  * Helper method to get min page size
  * Generally, min page size == max page size / 2
  */
-int BPlusTreePage::GetMinSize() const { return max_size_ / 2; }
+int BPlusTreePage::GetMinSize() const {
+  if (IsRootPage()) {
+    // root & leaf page may be empty tree, so size is 1; otherwise size is 2
+    return IsLeafPage() ? 1 : 2;
+  }
+  return (max_size_ + 1) / 2;
+}
 
 /*
  * Helper methods to get/set parent page id

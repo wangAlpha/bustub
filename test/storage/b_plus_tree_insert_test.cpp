@@ -36,6 +36,7 @@ TEST(BPlusTreeTests, InsertTest1) {
     int64_t value = key & 0xFFFFFFFF;
     rid.Set(static_cast<int32_t>(key >> 32), value);
     index_key.SetFromInteger(key);
+    // LOG_INFO("Insert value: %lld %lld", key, value);
     tree.Insert(index_key, rid, transaction);
   }
 

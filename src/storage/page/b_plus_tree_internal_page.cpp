@@ -27,6 +27,8 @@ namespace bustub {
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {
+  SetPageType(IndexPageType::INTERNAL_PAGE);
+  SetSize(0);
   SetPageId(page_id);
   SetParentPageId(parent_id);
   SetMaxSize(max_size);
@@ -79,15 +81,15 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const {
  */
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyComparator &comparator) const {
-  // TODO: To implement insert operator
+  assert(GetSize() > 1);
   int first = 1;
-  int last = GetSize();
-  while (first < last) {
+  int last = GetSize() - 1;
+  while (first <= last) {
     const int mi = (first + last) / 2;
-    if (comparator(key, KeyAt(mi)) < 0) {
-      last = mi;
+    if (comparator(key, KeyAt(mi)) <= 0) {
+      last = mi + 1;
     } else {
-      first = mi + 1;
+      first = mi - 1;
     }
   }
   return ValueAt(first - 1);
