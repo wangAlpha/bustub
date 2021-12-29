@@ -54,7 +54,7 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
   }
   // LOG_DEBUG("Free list size:%zu, Replacer size: %zu, page id:%d", free_list_.size(), replacer_->Size(), page_id);
   frame_id_t frame_id;
-  RetrieveFreeFrame(&frame_id);
+  ObtainFreeFrame(&frame_id);
   auto &page = pages_->at(frame_id);
   ResetPage(frame_id, page_id);
   // LOG_DEBUG("Fetch page id: %d", page.GetPageId());
@@ -113,7 +113,7 @@ Page *BufferPoolManager::NewPage(page_id_t *page_id) {
 
   *page_id = disk_manager_->AllocatePage();
   frame_id_t frame_id;
-  if (RetrieveFreeFrame(&frame_id)) {
+  if (ObtainFreeFrame(&frame_id)) {
     // LOG_INFO("new page id:%d frame id:%d", *page_id, frame_id);
     auto &page = pages_->at(frame_id);
     ResetPage(frame_id, *page_id);
@@ -162,7 +162,7 @@ void BufferPoolManager::ResetPage(frame_id_t frame_id, page_id_t page_id) {
 
 bool BufferPoolManager::AllPinned() { return free_list_.empty() && (replacer_->Size() == 0); }
 
-bool BufferPoolManager::RetrieveFreeFrame(frame_id_t *frame_id) {
+bool BufferPoolManager::ObtainFreeFrame(frame_id_t *frame_id) {
   if (!free_list_.empty()) {
     *frame_id = free_list_.front();
     free_list_.pop_front();
@@ -173,8 +173,8 @@ bool BufferPoolManager::RetrieveFreeFrame(frame_id_t *frame_id) {
     // LOG_ERROR("Find replacer free frame failure");
     return false;
   }
-  auto &page = pages_->at(page_table_[*frame_id]);
-  auto const &page_id = page.GetPageId();
+  Page &page = pages_->at(page_table_[*frame_id]);
+  const page_id_t page_id = page.GetPageId();
   page_table_.erase(page_id);
   if (page.IsDirty()) {
     disk_manager_->WritePage(page_id, page.GetData());

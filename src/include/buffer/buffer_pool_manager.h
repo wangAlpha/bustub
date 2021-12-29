@@ -87,7 +87,10 @@ class BufferPoolManager {
    */
   void ResetPage(frame_id_t frame_id, page_id_t page_id);
 
-  bool RetrieveFreeFrame(frame_id_t *frame_id);
+  /**
+   *  Obtain a free frame, if not exist a free frame victim a page
+   */
+  bool ObtainFreeFrame(frame_id_t *frame_id);
 
   /** @return pointer to all the pages in the buffer pool */
   Page *GetPages() const { return pages_.get()->data(); }
