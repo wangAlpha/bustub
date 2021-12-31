@@ -35,7 +35,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
   }
 }
 
-BufferPoolManager::~BufferPoolManager() { FlushAllPages(); }
+BufferPoolManager::~BufferPoolManager() {}
 
 Page *BufferPoolManager::FetchPage(page_id_t page_id) {
   std::lock_guard<std::mutex> gurad(latch_);

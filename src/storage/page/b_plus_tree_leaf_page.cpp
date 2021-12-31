@@ -13,6 +13,7 @@
 #include <iterator>
 #include <sstream>
 #include "common/exception.h"
+#include "common/logger.h"
 #include "common/rid.h"
 
 namespace bustub {
@@ -50,18 +51,18 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) { next_pa
  */
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(const KeyType &key, const KeyComparator &comparator) const {
-  int first = 1;
-  int last = GetSize();
-  while (first < last) {
+  int first = 0;
+  int last = GetSize() - 1;
+  while (first <= last) {
     const int mi = (first + last) / 2;
-    if (comparator(key, KeyAt(mi)) <= 0) {
-      last = mi;
+    if (comparator(KeyAt(mi), key) >= 0) {
+      last = mi - 1;
     } else {
       first = mi + 1;
     }
   }
 
-  return first;
+  return last + 1;
 }
 
 /*
@@ -85,7 +86,7 @@ const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
 }
 
 /*****************************************************************************
- * INSERTION
+ * INSERTIONf
  *****************************************************************************/
 /*
  * Insert key & value pair into leaf page ordered by key
@@ -100,6 +101,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &valu
   }
   array_[index].first = key;
   array_[index].second = value;
+  LOG_DEBUG("Insert Index:%d, key: %lld, value: %lld", index, key.ToString(), value.Get());
   IncreaseSize(1);
   return GetSize();
 }
@@ -146,6 +148,7 @@ INDEX_TEMPLATE_ARGUMENTS
 bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const {
   // LOG_DEBUG("Lookup leaf page key: %d", key);
   const int index = KeyIndex(key, comparator);
+  LOG_DEBUG("Look up key, value at index: %d", index);
   if (index < GetSize() && !comparator(key, KeyAt(index))) {
     *value = array_[index].second;
     return true;

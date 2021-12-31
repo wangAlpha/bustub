@@ -36,10 +36,10 @@ TEST(BPlusTreeTests, InsertTest1) {
     int64_t value = key & 0xFFFFFFFF;
     rid.Set(static_cast<int32_t>(key >> 32), value);
     index_key.SetFromInteger(key);
-    // LOG_INFO("Insert value: %lld %lld", key, value);
+    //    LOG_INFO("Insert value: %lld %lld", key, value);
     tree.Insert(index_key, rid, transaction);
   }
-
+  LOG_DEBUG("Insert Values Done");
   std::vector<RID> rids;
   for (auto key : keys) {
     rids.clear();
@@ -48,9 +48,10 @@ TEST(BPlusTreeTests, InsertTest1) {
     EXPECT_EQ(rids.size(), 1);
 
     int64_t value = key & 0xFFFFFFFF;
+    LOG_DEBUG("rids size: %zu Get value: %lld slotNum:%u, value:%lld", rids.size(), rids[0].Get(), rids[0].GetSlotNum(),
+              value);
     EXPECT_EQ(rids[0].GetSlotNum(), value);
   }
-
   int64_t start_key = 1;
   int64_t current_key = start_key;
   index_key.SetFromInteger(start_key);
@@ -105,7 +106,7 @@ TEST(BPlusTreeTests, InsertTest2) {
     index_key.SetFromInteger(key);
     tree.GetValue(index_key, &rids);
     EXPECT_EQ(rids.size(), 1);
-
+    //    LOG_INFO("\n%s", tree.ToString().c_str());
     int64_t value = key & 0xFFFFFFFF;
     EXPECT_EQ(rids[0].GetSlotNum(), value);
   }

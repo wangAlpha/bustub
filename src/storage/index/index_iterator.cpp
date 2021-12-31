@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "common/config.h"
+#include "common/logger.h"
 #include "storage/index/index_iterator.h"
 
 namespace bustub {
@@ -23,7 +24,7 @@ INDEXITERATOR_TYPE::~IndexIterator() {
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-bool INDEXITERATOR_TYPE::isEnd() { return current_leaf_node_ == nullptr || index_ >= current_leaf_node_->GetMaxSize(); }
+bool INDEXITERATOR_TYPE::isEnd() { return current_leaf_node_ == nullptr || index_ >= current_leaf_node_->GetSize(); }
 
 INDEX_TEMPLATE_ARGUMENTS
 const MappingType &INDEXITERATOR_TYPE::operator*() { return current_leaf_node_->GetItem(index_); }
@@ -31,10 +32,11 @@ const MappingType &INDEXITERATOR_TYPE::operator*() { return current_leaf_node_->
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
   index_ += 1;
+  LOG_DEBUG("index_ == %d", index_);
   if (index_ >= current_leaf_node_->GetMaxSize()) {
     const page_id_t next = current_leaf_node_->GetNextPageId();
     if (next == INVALID_PAGE_ID) {
-      current_leaf_node_ = nullptr;
+      return *this;
     } else {
       Page *page = buffer_pool_manager_->FetchPage(next);
       current_leaf_node_ = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(page->GetData());
