@@ -207,7 +207,7 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient, 
     array_[i] = array_[i + 1];
   }
   IncreaseSize(-1);
-  //    recipient->SetKeyAt();
+  buffer_manager->UnpinPage(GetParentPageId(), true);
 }
 
 /*

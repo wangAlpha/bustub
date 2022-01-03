@@ -99,7 +99,7 @@ class BufferPoolManager {
   size_t GetPoolSize() { return pool_size_; }
 
  protected:
-  bool AllPinned();
+  bool CheckAllpinned();
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
   /** Array of buffer pool pages. */

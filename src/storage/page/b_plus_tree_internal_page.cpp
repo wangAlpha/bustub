@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include "common/exception.h"
+#include "common/logger.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 
 namespace bustub {
@@ -40,14 +41,14 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const {
   // First key is invalid
-  assert(0 <= index && index < GetMaxSize());
+  assert(0 <= index && index < GetSize());
   return array_[index].first;
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
   // First key is invalid
-  assert(0 < index && index < GetMaxSize());
+  assert(0 <= index && index < GetSize());
   array_[index].first = key;
 }
 
@@ -57,7 +58,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
-  const auto it = std::find_if(array_, array_ + GetMaxSize(), [v = value](auto &e) { return v == e.second; });
+  const auto it = std::find_if(array_, array_ + GetSize(), [v = value](auto &e) { return v == e.second; });
   return it - array_;
 }
 
@@ -67,7 +68,7 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
  */
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const {
-  assert(0 <= index && index < GetMaxSize());
+  assert(0 <= index && index < GetSize());
   return array_[index].second;
 }
 
@@ -172,8 +173,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyNFrom(MappingType *items, int size, Buf
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {
-  assert(GetSize() > 0);
-  assert(0 < index && index < GetSize());
+  assert(0 <= index && index < GetSize());
   for (int i = index + 1; i < GetSize(); ++i) {
     array_[i - 1] = array_[i];
   }
@@ -224,9 +224,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveAllTo(BPlusTreeInternalPage *recipient,
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeInternalPage *recipient, const KeyType &middle_key,
                                                       BufferPoolManager *buffer_pool_manager) {
-  Page *page = buffer_pool_manager->FetchPage(GetParentPageId());
-  auto parent = reinterpret_cast<B_PLUS_TREE_INTERNAL_PAGE_TYPE *>(page->GetData());
-
+  assert(GetSize() > 0);
   MappingType pair = std::make_pair(middle_key, ValueAt(0));
   recipient->CopyLastFrom(pair, buffer_pool_manager);
 
@@ -235,7 +233,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeInternalPage *rec
   }
 
   IncreaseSize(-1);
-  buffer_pool_manager->UnpinPage(parent->GetPageId(), true);
+  buffer_pool_manager->UnpinPage(GetParentPageId(), true);
 }
 
 /* Append an entry at the end.
