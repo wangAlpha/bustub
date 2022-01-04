@@ -52,6 +52,9 @@ INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
   // 1. find page
   auto leaf_page = FindLeafPage(key);
+  if (!leaf_page) {
+    return false;
+  }
   // 2. find value
   result->resize(1);
   const bool exist = leaf_page->Lookup(key, &result->at(0), comparator_);
@@ -249,7 +252,7 @@ bool BPLUSTREE_TYPE::CoalesceOrRedistribute(N *node, Transaction *transaction) {
 
   bool removed_parent = false;
   if (coalesce) {
-    removed_parent = Coalesce(&sibling_node, &node, &parent_node, node_index, transaction);
+    removed_parent = Coalesce(sibling_node, node, parent_node, node_index, transaction);
     buffer_pool_manager_->UnpinPage(node->GetPageId(), true);
     if (node_index == 0) {
       buffer_pool_manager_->DeletePage(sibling_node->GetPageId());
@@ -281,18 +284,18 @@ bool BPLUSTREE_TYPE::CoalesceOrRedistribute(N *node, Transaction *transaction) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 template <typename N>
-bool BPLUSTREE_TYPE::Coalesce(N **neighbor_node, N **node,
-                              BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> **parent, int index,
+bool BPLUSTREE_TYPE::Coalesce(N *&neighbor_node, N *&node,
+                              BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *&parent, int index,
                               Transaction *transaction) {
   if (index == 0) {
-    std::swap(*node, *neighbor_node);
+    std::swap(node, neighbor_node);
     index = 1;
   }
-  (*node)->MoveAllTo(*neighbor_node, (*neighbor_node)->KeyAt(index), buffer_pool_manager_);
+  node->MoveAllTo(neighbor_node, neighbor_node->KeyAt(index), buffer_pool_manager_);
 
-  (*parent)->Remove(index);
-  if ((*parent)->GetSize() < (*parent)->GetMinSize()) {
-    return CoalesceOrRedistribute(*parent, transaction);
+  parent->Remove(index);
+  if (parent->GetSize() <= parent->GetMinSize()) {
+    return CoalesceOrRedistribute(parent, transaction);
   }
 
   return false;

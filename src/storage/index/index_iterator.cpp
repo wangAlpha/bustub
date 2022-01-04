@@ -32,7 +32,6 @@ const MappingType &INDEXITERATOR_TYPE::operator*() { return current_leaf_node_->
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
   index_ += 1;
-  LOG_DEBUG("index_ == %d", index_);
   if (index_ >= current_leaf_node_->GetMaxSize()) {
     const page_id_t next = current_leaf_node_->GetNextPageId();
     if (next == INVALID_PAGE_ID) {

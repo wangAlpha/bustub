@@ -48,7 +48,7 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
     return &page;
   }
 
-  if (CheckAllpinned()) {
+  if (CheckAllPinned()) {
     // LOG_WARN("Fail to search a free frame, page id:%d", page_id);
     return nullptr;
   }
@@ -77,6 +77,7 @@ bool BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty) {
   Page &page = pages_->at(frame_id);
   page.is_dirty_ |= is_dirty;
   if (page.GetPinCount() <= 0) {
+    LOG_ERROR("page id: %d, pin count: %d", page_id, page.GetPinCount());
     return false;
   }
 
@@ -107,7 +108,7 @@ bool BufferPoolManager::FlushPage(page_id_t page_id) {
 }
 
 Page *BufferPoolManager::NewPage(page_id_t *page_id) {
-  if (CheckAllpinned()) {
+  if (CheckAllPinned()) {
     return nullptr;
   }
 
@@ -162,7 +163,7 @@ void BufferPoolManager::ResetPage(frame_id_t frame_id, page_id_t page_id) {
   page.ResetMemory();
 }
 
-bool BufferPoolManager::CheckAllpinned() { return free_list_.empty() && (replacer_->Size() == 0); }
+bool BufferPoolManager::CheckAllPinned() const { return free_list_.empty() && (replacer_->Size() == 0); }
 
 bool BufferPoolManager::ObtainFreeFrame(frame_id_t *frame_id) {
   if (!free_list_.empty()) {
